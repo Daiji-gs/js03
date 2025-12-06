@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="utf-8">
+<title>Firebase:v9:Chatアプリ</title>
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+
+<div>
+    <div> 名前：<input type="text" id="uname"> </div>
+    <div>
+        <textarea id="text" cols="30" rows="10"></textarea>
+        <button id="send">送信</button>
+    </div>
+    <div id="output" style="overflow: auto; height: 300px;"></div>
+</div>
+
+<!--/ コンテンツ表示画面 -->
+
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, push, set, update, onChildAdded, onChildChanged, remove, onChildRemoved } 
+  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBSGZfCcPP_7g75RtKh-0oq_k3PRSqLenM",
+    authDomain: "gsdemo-2be6f.firebaseapp.com",
+    projectId: "gsdemo-2be6f",
+    storageBucket: "gsdemo-2be6f.firebasestorage.app",
+    messagingSenderId: "403984658854",
+    appId: "1:403984658854:web:ca1ebfb007209ab5f55f67"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig); //Fisebaseにアクセス
+  const db = getDatabase(app);  //FirebaseのReal Time Databaseにアクセス
+  const dbRef = ref(db, "chat");  //Firebaseの初期設定時に「chat」という名前でアプリ（データベース）を構築している。Real Time Databaseの「chat」にアクセスするという意味
+
+
+  $("#text").on("keydown",function(e){
+    console.log(e);
+        if(e.keyCode == 13){
+            const msg = {
+            uname : $("#uname").val(),  
+            text  : $("#text").val()
+        }
+        const newPostRef = push(dbRef); 
+        set( newPostRef , msg); 
+    }
+
+  });
+
+
+//データ送信
+$("#send").on("click",function(){
+    const msg = {
+        uname : $("#uname").val(),  //オブジェクト変数は、「=」ではなく「:」になる。終わりは「;」でなく「,」
+        text  : $("#text").val(),
+        now  : new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) 
+    }
+    const newPostRef = push(dbRef); //データにユニークKey（重複しないKeyのこと）を作成する関数
+    set( newPostRef , msg);
+});
+
+//データ受信(chatGPTバージョン)
+onChildAdded(dbRef, function(data){
+    const msg = data.val();
+    const key = data.key;
+
+    let html  = "";
+        html  = "<p id='"+key+"' class='message'>";
+        html +=   "<span class='message-meta'>"
+                + msg.now + " " + msg.uname +
+                  "</span><br>";
+        html +=   "<span class='message-text' contentEditable='true' id='"+key+"_update'>"
+                + msg.text +
+                  "</span>";
+        html +=   "<span class='remove' data-key='"+key+"'>"
+                + "<i class='fa-solid fa-trash'></i>"
+                + "</span>";
+        html += "</p>";
+
+    $("#output").append(html);
+    $("#output").scrollTop($("#output")[0].scrollHeight);
+});
+
+
+//もともとのバージョン
+// onChildAdded(dbRef, function(data){
+//     const msg = data.val(); //オブジェクト変数として受け取りる
+//     const key = data.key; //ユニークKeyを取得、削除・更新に必須！！
+//     let html = "";
+//         html =  "<p id='"+key+"'>";
+//         html += msg.now;
+//         html += "<br>";
+//         html += msg.uname;
+//         html += "<br>";
+//         html += '<span contentEditable="true" id="'+key+'_update">'+msg.text+"</span>";
+//         html += '<span class="remove" data-key="'+key+'"><i class="fa-solid fa-trash"></i></span>';
+//         html += "</p>";
+//         $("#output").append(html);
+//         $("#output").scrollTop($("#output")[0].scrollHeight);
+// });
+
+
+//削除イベント
+$("#output").on("click", ".remove", function(){
+    const key = $(this).attr("data-key");
+    const remove_item = ref(db, "chat/"+key);
+    remove(remove_item);
+});
+
+//削除処理が Firebase 側で実行されたらイベント発生！
+onChildRemoved(dbRef, (data) => {
+    $("#" + data.key).remove();  // DOM から該当 <p> を削除
+});
+
+
+</script>
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
